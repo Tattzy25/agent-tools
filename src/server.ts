@@ -139,6 +139,33 @@ function createServer(env) {
     }
   );
 
+  server.registerTool(
+    "get_browser_version",
+    {
+      description: "Get browser version metadata",
+      inputSchema: {
+        session_id: z.string().describe("Browser session ID")
+      }
+    },
+    async ({ session_id }) => {
+      const response = await fetch(`${env.BROWSER_VERSION_URL}/${session_id}/json/version`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        }
+      });
+      const data = await response.json();
+      return {
+        content: [
+          {
+            text: JSON.stringify(data),
+            type: "text"
+          }
+        ]
+      };
+    }
+  );
+
   return server;
 }
 
