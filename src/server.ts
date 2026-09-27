@@ -16,7 +16,8 @@ function createServer(env) {
     },
     async () => {
       const headers: Record<string, string> = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
       };
       const response = await fetch(env.GET_BROWSER_ID_URL, {
         method: "POST",
@@ -53,7 +54,7 @@ function createServer(env) {
       const qs = params.toString();
       const response = await fetch(
         qs ? `${env.ACQ_BROWSER_SESSION_URL}?${qs}` : env.ACQ_BROWSER_SESSION_URL,
-        { method: "GET", headers: {} }
+        { method: "GET", headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` } }
       );
       const data = await response.json();
       return {
@@ -88,7 +89,10 @@ function createServer(env) {
         qs ? `${env.CONNECT_TO_SESSION_URL}?${qs}` : env.CONNECT_TO_SESSION_URL,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+          },
           body: JSON.stringify({ session_id })
         }
       );
