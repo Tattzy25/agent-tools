@@ -14,20 +14,20 @@ function createServer() {
       description: "Get a browser session ID",
       inputSchema: { name: z.string().optional() }
     },
-    async ({ name }) => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json"
-      };
-      const response = await fetch(env.GET_BROWSER_ID_URL, {
-        method: "POST",
-        headers
-      });
-      const data = await response.json();
-      return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
+    aasync () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    const response = await fetch(env.BROWSER_RENDERING_URL, {
+      method: "POST",
+      headers
+    });
+    const data = await response.json();
+    return {
+      content: [
+        {
+          text: JSON.stringify(data),
+          type: "text"
           }
         ]
       };
