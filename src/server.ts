@@ -315,6 +315,26 @@ function createServer(env) {
     }
   );
 
+    server.registerTool(
+    "get_session_details",
+    {
+      description: "Get details for a specific browser session",
+      inputSchema: {
+        session_id: z.string().describe("Session ID")
+      }
+    },
+    async ({ session_id }) => {
+      const response = await fetch(`${env.SESSION_DETAILS_URL}/${session_id}`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
+      });
+      const data = await response.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(data) }]
+      };
+    }
+  );
+
   return server;
 }
 
