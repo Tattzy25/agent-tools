@@ -239,7 +239,53 @@ function createServer(env) {
       };
     }
   );
-
+  
+    server.registerTool(
+    "get_html_content",
+    {
+      description: "Fetch rendered HTML content from a URL or HTML content",
+      inputSchema: {
+        url: z.string().optional().describe("URL to navigate to"),
+        html: z.string().optional().describe("HTML content to render"),
+        cacheTTL: z.number().min(0).max(86400).optional().describe("Cache TTL in seconds (default 5, set 0 to disable)"),
+        waitUntil: z.enum(["load", "domcontentloaded", "networkidle0", "networkidle2"]).optional().describe("When to consider navigation complete"),
+        timeout: z.number().max(60000).optional().describe("Navigation timeout in milliseconds (max 60000)"),
+        userAgent: z.string().optional().describe("Custom user agent string"),
+        setJavaScriptEnabled: z.boolean().optional().describe("Enable or disable JavaScript"),
+        actionTimeout: z.number().max(120000).optional().describe("Max duration for browser action after page load in milliseconds (max 120000)"),
+        waitForSelector: z.string().optional().describe("CSS selector to wait for before proceeding"),
+        waitForTimeout: z.number().max(120000).optional().describe("Timeout to wait before continuing in milliseconds (max 120000)")
+      }
+    },
+    async ({ url, html, cacheTTL, waitUntil, timeout, userAgent, setJavaScriptEnabled, actionTimeout, waitForSelector, waitForTimeout }) => {
+      const body = {};
+      if (url) body.url = url;
+      if (html) body.html = html;
+      if (waitUntil || timeout) {
+        body.gotoOptions = {};
+        if (waitUntil) body.gotoOptions.waitUntil = waitUntil;
+        if (timeout) body.gotoOptions.timeout = timeout;
+      }
+      if (userAgent) body.userAgent = userAgent;
+      if (setJavaScriptEnabled !== undefined) body.setJavaScriptEnabled = setJavaScriptEnabled;
+      if (actionTimeout) body.actionTimeout = actionTimeout;
+      if (waitForSelector) body.waitForSelector = { selector: waitForSelector };
+      if (waitForTimeout) body.waitForTimeout = waitForTimeout;
+      const qs = cacheTTL !== undefined ? `?cacheTTL=${cacheTTL}` : "";
+      const response = await fetch(`${env.CONTENT_URL}${qs}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(data) }]
+      };
+    }
+  );
   return server;
 }
 
