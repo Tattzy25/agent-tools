@@ -4,21 +4,29 @@ import { z } from "zod";
 
 function createServer() {
   const server = new McpServer({
-    name: "Hello MCP Server",
+    name: "Agent Tools",
     version: "1.0.0"
   });
 
   server.registerTool(
-    "hello",
+    "get_browser_session_id",
     {
-      description: "Returns a greeting message",
+      description: "Get a browser session ID",
       inputSchema: { name: z.string().optional() }
     },
     async ({ name }) => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      };
+      const response = await fetch(env.BROWSER_API_URL, {
+        method: "POST",
+        headers
+      });
+      const data = await response.json();
       return {
         content: [
           {
-            text: `Hello, ${name ?? "World"}!`,
+            text: JSON.stringify(data),
             type: "text"
           }
         ]
