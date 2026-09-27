@@ -18,7 +18,7 @@ function createServer() {
       const headers: Record<string, string> = {
         "Content-Type": "application/json"
       };
-      const response = await fetch(env.BROWSER_API_URL, {
+      const response = await fetch(env.GET_BROWSER_ID_URL, {
         method: "POST",
         headers
       });
