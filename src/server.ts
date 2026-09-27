@@ -69,9 +69,6 @@ function createServer() {
   return server;
 }
 
-  return server;
-}
-
 export default {
   fetch(request, env, ctx) {
     return createMcpHandler(createServer)(request, env, ctx);
