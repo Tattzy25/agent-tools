@@ -33,6 +33,41 @@ function createServer() {
       };
     }
   );
+  server.registerTool(
+    "acquire_browser_session",
+    {
+      description: "Acquire and connect to a browser session",
+      inputSchema: {
+        keep_alive: z.number().min(10000).max(1200000).optional(),
+        lab: z.boolean().optional(),
+        recording: z.boolean().optional(),
+        guardrails: z.string().optional()
+      }
+    },
+    async ({ keep_alive, lab, recording }) => {
+      const params = new URLSearchParams();
+      if (keep_alive) params.set("keep_alive", String(keep_alive));
+      if (lab) params.set("lab", "true");
+      if (recording) params.set("recording", "true");
+      const qs = params.toString();
+      const response = await fetch(
+        qs ? `${env.ACQ_BROWSER_SESSION_URL}?${qs}` : env.ACQ_BROWSER_SESSION_URL,
+        { method: "GET", headers }
+      );
+      const data = await response.json();
+      return {
+        content: [
+          {
+            text: JSON.stringify(data),
+            type: "text"
+          }
+        ]
+      };
+    }
+  );
+
+  return server;
+}
 
   return server;
 }
