@@ -112,6 +112,33 @@ function createServer(env) {
     }
   );
 
+  server.registerTool(
+    "close_browser_session",
+    {
+      description: "Close a browser session",
+      inputSchema: {
+        session_id: z.string().describe("Browser session ID to close")
+      }
+    },
+    async ({ session_id }) => {
+      const response = await fetch(`${env.CLOSE_SESSION_URL}/${session_id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        }
+      });
+      const data = await response.json();
+      return {
+        content: [
+          {
+            text: JSON.stringify(data),
+            type: "text"
+          }
+        ]
+      };
+    }
+  );
+
   return server;
 }
 
