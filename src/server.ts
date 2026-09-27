@@ -286,6 +286,35 @@ function createServer(env) {
       };
     }
   );
+  
+    server.registerTool(
+    "list_sessions",
+    {
+      description: "List active browser sessions",
+      inputSchema: {
+        limit: z.number().min(1).max(200).optional().describe("Maximum number of sessions to return (1-200)"),
+        offset: z.number().min(0).optional().describe("Number of sessions to skip")
+      }
+    },
+    async ({ limit, offset }) => {
+      const params = new URLSearchParams();
+      if (limit) params.set("limit", String(limit));
+      if (offset) params.set("offset", String(offset));
+      const qs = params.toString();
+      const response = await fetch(
+        qs ? `${env.LIST_SESSIONS_URL}?${qs}` : env.LIST_SESSIONS_URL,
+        {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
+        }
+      );
+      const data = await response.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(data) }]
+      };
+    }
+  );
+
   return server;
 }
 
