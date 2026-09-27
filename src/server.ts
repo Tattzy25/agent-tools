@@ -15,22 +15,16 @@ function createServer(env) {
       inputSchema: {}
     },
     async () => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
-      };
       const response = await fetch(env.GET_BROWSER_ID_URL, {
         method: "POST",
-        headers
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        }
       });
       const data = await response.json();
       return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify(data) }]
       };
     }
   );
@@ -64,12 +58,7 @@ function createServer(env) {
       const ws = response.webSocket;
       ws.accept();
       return {
-        content: [
-          {
-            text: JSON.stringify({ status: "connected" }),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify({ status: "connected" }) }]
       };
     }
   );
@@ -102,12 +91,7 @@ function createServer(env) {
       const ws = response.webSocket;
       ws.accept();
       return {
-        content: [
-          {
-            text: JSON.stringify({ status: "connected", sessionId: session_id }),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify({ status: "connected", sessionId: session_id }) }]
       };
     }
   );
@@ -123,18 +107,11 @@ function createServer(env) {
     async ({ session_id }) => {
       const response = await fetch(`${env.CLOSE_SESSION_URL}/${session_id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
-        }
+        headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
       });
       const data = await response.json();
       return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify(data) }]
       };
     }
   );
@@ -150,18 +127,11 @@ function createServer(env) {
     async ({ session_id }) => {
       const response = await fetch(`${env.BROWSER_VERSION_URL}/${session_id}/json/version`, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
-        }
+        headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
       });
       const data = await response.json();
       return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify(data) }]
       };
     }
   );
@@ -177,18 +147,11 @@ function createServer(env) {
     async ({ session_id }) => {
       const response = await fetch(`${env.CDP_PROTOCOL_URL}/${session_id}/json/protocol`, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
-        }
+        headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
       });
       const data = await response.json();
       return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify(data) }]
       };
     }
   );
@@ -206,7 +169,7 @@ function createServer(env) {
       }
     },
     async ({ session_id, expiresInMs, mode, targetId, readonly }) => {
-      const body: Record<string, unknown> = {};
+      const body = {};
       if (expiresInMs) body.expiresInMs = expiresInMs;
       if (mode) body.mode = mode;
       if (targetId) body.targetId = targetId;
@@ -221,12 +184,58 @@ function createServer(env) {
       });
       const data = await response.json();
       return {
-        content: [
-          {
-            text: JSON.stringify(data),
-            type: "text"
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify(data) }]
+      };
+    }
+  );
+
+  server.registerTool(
+    "get_accessibility_tree",
+    {
+      description: "Get the accessibility tree of a page. Navigate to a URL or provide HTML content.",
+      inputSchema: {
+        url: z.string().optional().describe("URL to navigate to"),
+        html: z.string().optional().describe("HTML content to render"),
+        interestingOnly: z.boolean().optional().describe("Only return semantically meaningful nodes"),
+        root: z.string().optional().describe("CSS selector to scope the tree to a subtree"),
+        cacheTTL: z.number().min(0).max(86400).optional().describe("Cache TTL in seconds (default 5, set 0 to disable)"),
+        waitUntil: z.enum(["load", "domcontentloaded", "networkidle0", "networkidle2"]).optional().describe("When to consider navigation complete"),
+        timeout: z.number().max(60000).optional().describe("Navigation timeout in milliseconds (max 60000)"),
+        userAgent: z.string().optional().describe("Custom user agent string"),
+        setJavaScriptEnabled: z.boolean().optional().describe("Enable or disable JavaScript"),
+        actionTimeout: z.number().max(120000).optional().describe("Max duration for browser action after page load in milliseconds (max 120000)"),
+        waitForSelector: z.string().optional().describe("CSS selector to wait for before proceeding"),
+        waitForTimeout: z.number().max(120000).optional().describe("Timeout to wait before continuing in milliseconds (max 120000)")
+      }
+    },
+    async ({ url, html, interestingOnly, root, cacheTTL, waitUntil, timeout, userAgent, setJavaScriptEnabled, actionTimeout, waitForSelector, waitForTimeout }) => {
+      const body = {};
+      if (url) body.url = url;
+      if (html) body.html = html;
+      if (interestingOnly !== undefined) body.interestingOnly = interestingOnly;
+      if (root) body.root = root;
+      if (waitUntil || timeout) {
+        body.gotoOptions = {};
+        if (waitUntil) body.gotoOptions.waitUntil = waitUntil;
+        if (timeout) body.gotoOptions.timeout = timeout;
+      }
+      if (userAgent) body.userAgent = userAgent;
+      if (setJavaScriptEnabled !== undefined) body.setJavaScriptEnabled = setJavaScriptEnabled;
+      if (actionTimeout) body.actionTimeout = actionTimeout;
+      if (waitForSelector) body.waitForSelector = { selector: waitForSelector };
+      if (waitForTimeout) body.waitForTimeout = waitForTimeout;
+      const qs = cacheTTL !== undefined ? `?cacheTTL=${cacheTTL}` : "";
+      const response = await fetch(`${env.ACCESSIBILITY_TREE_URL}${qs}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(data) }]
       };
     }
   );
