@@ -12,7 +12,7 @@ function createServer(env) {
     "get_browser_session_id",
     {
       description: "Get a browser session ID",
-      inputSchema: { name: z.string().optional() }
+      inputSchema: {}
     },
     async () => {
       const headers: Record<string, string> = {
