@@ -166,6 +166,33 @@ function createServer(env) {
     }
   );
 
+  server.registerTool(
+    "get_cdp_protocol",
+    {
+      description: "Get the Chrome DevTools Protocol schema including all domains, commands, events, and types",
+      inputSchema: {
+        session_id: z.string().describe("Browser session ID")
+      }
+    },
+    async ({ session_id }) => {
+      const response = await fetch(`${env.CDP_PROTOCOL_URL}/${session_id}/json/protocol`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+        }
+      });
+      const data = await response.json();
+      return {
+        content: [
+          {
+            text: JSON.stringify(data),
+            type: "text"
+          }
+        ]
+      };
+    }
+  );
+
   return server;
 }
 
