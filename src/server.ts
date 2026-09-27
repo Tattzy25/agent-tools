@@ -40,10 +40,9 @@ function createServer(env) {
     {
       description: "Acquire and connect to a browser session",
       inputSchema: {
-        keep_alive: z.number().min(10000).max(1200000).optional(),
-        lab: z.boolean().optional(),
-        recording: z.boolean().optional(),
-        guardrails: z.string().optional()
+        keep_alive: z.number().min(10000).max(1200000).optional().describe("Keep-alive time in milliseconds (10000-1200000)"),
+        lab: z.boolean().optional().describe("Use experimental browser"),
+        recording: z.boolean().optional().describe("Enable session recording")
       }
     },
     async ({ keep_alive, lab, recording }) => {
@@ -54,13 +53,20 @@ function createServer(env) {
       const qs = params.toString();
       const response = await fetch(
         qs ? `${env.ACQ_BROWSER_SESSION_URL}?${qs}` : env.ACQ_BROWSER_SESSION_URL,
-        { method: "GET", headers: { "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}` } }
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
+            "Upgrade": "websocket"
+          }
+        }
       );
-      const data = await response.json();
+      const ws = response.webSocket;
+      ws.accept();
       return {
         content: [
           {
-            text: JSON.stringify(data),
+            text: JSON.stringify({ status: "connected" }),
             type: "text"
           }
         ]
@@ -74,9 +80,9 @@ function createServer(env) {
       description: "Connect to a browser session",
       inputSchema: {
         session_id: z.string().describe("Browser session ID to connect to"),
-        keep_alive: z.number().min(10000).max(1200000).optional(),
-        lab: z.boolean().optional(),
-        recording: z.boolean().optional()
+        keep_alive: z.number().min(10000).max(1200000).optional().describe("Keep-alive time in milliseconds (10000-1200000)"),
+        lab: z.boolean().optional().describe("Use experimental browser"),
+        recording: z.boolean().optional().describe("Enable session recording")
       }
     },
     async ({ session_id, keep_alive, lab, recording }) => {
@@ -85,22 +91,20 @@ function createServer(env) {
       if (lab) params.set("lab", "true");
       if (recording) params.set("recording", "true");
       const qs = params.toString();
-      const response = await fetch(
-        qs ? `${env.CONNECT_TO_SESSION_URL}?${qs}` : env.CONNECT_TO_SESSION_URL,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`
-          },
-          body: JSON.stringify({ session_id })
+      const url = `${env.CONNECT_TO_SESSION_URL}/${session_id}${qs ? `?${qs}` : ""}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
+          "Upgrade": "websocket"
         }
-      );
-      const data = await response.json();
+      });
+      const ws = response.webSocket;
+      ws.accept();
       return {
         content: [
           {
-            text: JSON.stringify(data),
+            text: JSON.stringify({ status: "connected", sessionId: session_id }),
             type: "text"
           }
         ]
